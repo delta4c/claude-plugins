@@ -1,0 +1,40 @@
+{
+  "_comentario": "Elegí UN ejemplo, renombralo a .claude/delta4c.json y borrá el resto (incluida esta clave).",
+
+  "ejemplo_node_pnpm_biome": {
+    "verificar": ["pnpm run lint", "pnpm typecheck", "pnpm test"],
+    "chequeoRapido": [
+      { "extensiones": ["ts", "tsx", "js", "jsx", "json", "css"], "comando": "pnpm exec biome check --no-errors-on-unmatched {archivo}" }
+    ],
+    "protegidos": ["prisma/migrations/**", "**/*.generated.ts"],
+    "ignorarEnCompuerta": ["**/*.md", "docs/**"],
+    "acotarSalidaTests": false
+  },
+
+  "ejemplo_node_npm_eslint": {
+    "verificar": ["npm run lint", "npx tsc --noEmit", "npm test"],
+    "chequeoRapido": [
+      { "extensiones": ["ts", "tsx", "js", "jsx"], "comando": "npx eslint --max-warnings 0 {archivo}" }
+    ],
+    "protegidos": [],
+    "acotarSalidaTests": 120
+  },
+
+  "ejemplo_laravel": {
+    "verificar": ["./vendor/bin/pint --test", "./vendor/bin/phpstan analyse --no-progress", "php artisan test"],
+    "chequeoRapido": [
+      { "extensiones": ["php"], "comando": "./vendor/bin/pint {archivo}" }
+    ],
+    "protegidos": ["database/migrations/**"],
+    "acotarSalidaTests": 120
+  },
+
+  "ejemplo_python": {
+    "verificar": ["ruff check .", "ruff format --check .", "pytest -q"],
+    "chequeoRapido": [
+      { "extensiones": ["py"], "comando": "ruff check --fix {archivo} && ruff format {archivo}" }
+    ],
+    "protegidos": ["**/migrations/0*.py"],
+    "acotarSalidaTests": 120
+  }
+}

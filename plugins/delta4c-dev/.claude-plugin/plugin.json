@@ -1,0 +1,13 @@
+{
+  "name": "delta4c-dev",
+  "displayName": "Delta 4C · Desarrollo",
+  "version": "0.1.0",
+  "description": "Estándar de desarrollo de Delta 4C: revisores en contexto limpio, compuerta de verificación antes de «listo», protección de secretos y gates, e2e con Playwright y preparación de repos.",
+  "author": {
+    "name": "Delta 4C",
+    "url": "https://github.com/delta4c"
+  },
+  "repository": "https://github.com/delta4c/claude-plugins",
+  "license": "UNLICENSED",
+  "keywords": ["delta4c", "revision", "calidad", "hooks", "playwright"]
+}
