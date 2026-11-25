@@ -1,0 +1,36 @@
+# Revisión automática de cada PR con Claude Code. Primera línea de revisión: comenta, nunca aprueba ni mergea.
+# Requiere: la GitHub App de Claude instalada en el repo y el secret ANTHROPIC_API_KEY (o CLAUDE_CODE_OAUTH_TOKEN).
+name: revision-claude
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+
+concurrency:
+  group: revision-claude-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  revision:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 20 --model sonnet"
+          prompt: |
+            Revisá el PR #${{ github.event.pull_request.number }} de ${{ github.repository }}
+            (diff contra ${{ github.event.pull_request.base.ref }}). Seguí CLAUDE.md / AGENTS.md del repo
+            y, si existe, la spec en docs/superpowers/specs/ o specs/.
+            Reportá solo problemas de correctitud, seguridad o requisitos, cada uno con archivo:línea,
+            evidencia concreta y arreglo sugerido, como comentarios en línea. Como máximo 5 sugerencias
+            opcionales en un comentario resumen. Si no encontrás problemas, decilo en una línea.
+            No edites código ni hagas commits.

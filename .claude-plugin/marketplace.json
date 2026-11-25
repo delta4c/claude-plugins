@@ -1,0 +1,17 @@
+{
+  "name": "delta4c",
+  "owner": {
+    "name": "Delta 4C",
+    "url": "https://github.com/delta4c"
+  },
+  "metadata": {
+    "description": "Plugins internos de Delta 4C para Claude Code."
+  },
+  "plugins": [
+    {
+      "name": "delta4c-dev",
+      "source": "./plugins/delta4c-dev",
+      "description": "Estándar de desarrollo de Delta 4C: revisores en contexto limpio, compuerta de verificación antes de «listo», protección de secretos y gates, e2e con Playwright y preparación de repos."
+    }
+  ]
+}

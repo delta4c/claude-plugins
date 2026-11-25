@@ -1,0 +1,21 @@
+{
+  "extraKnownMarketplaces": {
+    "delta4c": {
+      "source": { "source": "github", "repo": "delta4c/claude-plugins" }
+    }
+  },
+  "enabledPlugins": {
+    "delta4c-dev@delta4c": true
+  },
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.local)",
+      "Read(./.env.development)",
+      "Read(./.env.production)",
+      "Read(./.env.test)",
+      "Read(./**/*.pem)",
+      "Read(./**/*.key)"
+    ]
+  }
+}
