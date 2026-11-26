@@ -41,6 +41,17 @@ Los Test Agents son caros (el planner solo puede consumir más de 100k tokens): 
 - Un test por comportamiento observable; cada test independiente del orden.
 - Accesibilidad: en las pantallas principales, un chequeo con `@axe-core/playwright` sin violaciones serias.
 
+## Conectarlo a la compuerta
+
+Para que Claude no pueda cerrar un turno que toca pantallas sin pasar los e2e, en `.claude/delta4c.json`:
+
+```json
+"verificarE2E": ["pnpm exec playwright test --reporter=line"],
+"disparadoresE2E": ["src/app/**", "src/components/**", "**/*.tsx", "resources/views/**"]
+```
+
+La compuerta corre `verificarE2E` solo si los cambios de la sesión tocan algún disparador. Mantené esa suite en los journeys críticos para que tarde pocos minutos; la suite completa corre en CI.
+
 ## Cierre
 
 Reportá con evidencia: el comando que corriste, cuántos tests pasaron y, si hubo cambios visuales, las capturas a 375 y 1280 px.

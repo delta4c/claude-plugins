@@ -1,13 +1,27 @@
 {
   "name": "delta4c-dev",
   "displayName": "Delta 4C · Desarrollo",
-  "version": "0.1.0",
-  "description": "Estándar de desarrollo de Delta 4C: revisores en contexto limpio, compuerta de verificación antes de «listo», protección de secretos y gates, e2e con Playwright y preparación de repos.",
+  "version": "0.2.0",
+  "description": "Estándar de desarrollo de Delta 4C: arquitectura y ADRs, flujo de feature (spec → plan → TDD → revisión → e2e → PR), revisores en contexto limpio, compuerta de verificación, e2e y revisión obligatoria, estándares de UI y API, protección de secretos y configuración eficiente en tokens. Incluye Superpowers.",
   "author": {
     "name": "Delta 4C",
     "url": "https://github.com/delta4c"
   },
   "repository": "https://github.com/delta4c/claude-plugins",
   "license": "UNLICENSED",
-  "keywords": ["delta4c", "revision", "calidad", "hooks", "playwright"]
+  "keywords": [
+    "delta4c",
+    "arquitectura",
+    "revision",
+    "calidad",
+    "hooks",
+    "playwright",
+    "superpowers"
+  ],
+  "dependencies": [
+    {
+      "name": "superpowers",
+      "marketplace": "claude-plugins-official"
+    }
+  ]
 }

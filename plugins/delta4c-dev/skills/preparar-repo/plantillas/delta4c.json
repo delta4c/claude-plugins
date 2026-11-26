@@ -1,11 +1,14 @@
 {
-  "_comentario": "Elegí UN ejemplo, renombralo a .claude/delta4c.json y borrá el resto (incluida esta clave).",
+  "_comentario": "Elegí UN ejemplo, copialo como .claude/delta4c.json y borrá el resto (incluida esta clave).",
 
-  "ejemplo_node_pnpm_biome": {
+  "ejemplo_node_pnpm_biome_playwright": {
     "verificar": ["pnpm run lint", "pnpm typecheck", "pnpm test"],
     "chequeoRapido": [
       { "extensiones": ["ts", "tsx", "js", "jsx", "json", "css"], "comando": "pnpm exec biome check --no-errors-on-unmatched {archivo}" }
     ],
+    "verificarE2E": ["pnpm exec playwright test --reporter=line"],
+    "disparadoresE2E": ["src/app/**", "src/components/**", "**/*.tsx", "**/*.css"],
+    "revisionObligatoria": { "minLineas": 40 },
     "protegidos": ["prisma/migrations/**", "**/*.generated.ts"],
     "ignorarEnCompuerta": ["**/*.md", "docs/**"],
     "acotarSalidaTests": false
@@ -16,6 +19,7 @@
     "chequeoRapido": [
       { "extensiones": ["ts", "tsx", "js", "jsx"], "comando": "npx eslint --max-warnings 0 {archivo}" }
     ],
+    "revisionObligatoria": { "minLineas": 40 },
     "protegidos": [],
     "acotarSalidaTests": 120
   },
@@ -25,6 +29,9 @@
     "chequeoRapido": [
       { "extensiones": ["php"], "comando": "./vendor/bin/pint {archivo}" }
     ],
+    "verificarE2E": ["npx playwright test --reporter=line"],
+    "disparadoresE2E": ["resources/views/**", "resources/js/**", "resources/css/**", "routes/web.php"],
+    "revisionObligatoria": { "minLineas": 40 },
     "protegidos": ["database/migrations/**"],
     "acotarSalidaTests": 120
   },
@@ -34,6 +41,7 @@
     "chequeoRapido": [
       { "extensiones": ["py"], "comando": "ruff check --fix {archivo} && ruff format {archivo}" }
     ],
+    "revisionObligatoria": { "minLineas": 40 },
     "protegidos": ["**/migrations/0*.py"],
     "acotarSalidaTests": 120
   }

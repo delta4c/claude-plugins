@@ -5,7 +5,8 @@
     }
   },
   "enabledPlugins": {
-    "delta4c-dev@delta4c": true
+    "delta4c-dev@delta4c": true,
+    "superpowers@claude-plugins-official": true
   },
   "permissions": {
     "deny": [
@@ -17,5 +18,8 @@
       "Read(./**/*.pem)",
       "Read(./**/*.key)"
     ]
+  },
+  "sandbox": {
+    "enabled": true
   }
 }

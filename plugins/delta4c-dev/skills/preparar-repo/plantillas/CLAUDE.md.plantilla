@@ -1,6 +1,6 @@
 # <Nombre del proyecto>
 
-<Una línea: qué es y para quién.> El diseño y las decisiones viven en `docs/`.
+<Una línea: qué es y para quién.> Arquitectura y decisiones: `docs/arquitectura.md` y `docs/adr/`.
 
 ## Comandos
 
@@ -10,18 +10,20 @@
 | `<pm> run lint` | lint |
 | `<pm> typecheck` | tipos |
 | `<pm> test` | tests |
+| `<pm> exec playwright test` | e2e |
 
 ## Reglas de la casa
 
-- **Evidencia antes de «listo»:** lint, typecheck y tests en verde (la compuerta del plugin delta4c-dev lo verifica sola).
+- **Evidencia antes de «listo»:** lint, typecheck y tests en verde. La compuerta del plugin delta4c-dev lo verifica sola, junto con los e2e si tocás pantallas.
 - **Los tests no se aflojan.** No edites un test existente para que pase: cambiá el código o explicá por qué el test está mal. Nada de `skip`, `only` ni asserts más débiles.
-- **Toda feature de más de un día arranca con spec** en `docs/superpowers/specs/` (o `specs/`) y se revisa con `/delta4c-dev:revision` antes del PR.
-- <Regla de arquitectura propia del repo: dónde va la lógica, por dónde pasan las escrituras, etc.>
-- **Español** en <dominio / UI / commits — ajustar>.
+- **Features no triviales con `/delta4c-dev:feature`:** spec → plan → TDD → revisión → e2e → PR.
+- **Pantallas con `/delta4c-dev:ui`; endpoints, datos e integraciones con `/delta4c-dev:api`.**
+- <Regla de arquitectura propia: dónde va la lógica, por dónde pasan las escrituras, etc.>
+- **Español** en <dominio / UI / commits; ajustar>.
 
 ## Arquitectura
 
-<3 a 6 líneas: capas o módulos, patrón a seguir y un archivo que sirva de ejemplo.>
+<3 a 6 líneas: capas o módulos, y el archivo que sirve de ejemplo para cada patrón. El detalle va en docs/arquitectura.md.>
 
 ## Trampas conocidas
 
@@ -29,4 +31,4 @@
 
 ## Al compactar
 
-Conservá la lista de archivos modificados, los comandos de verificación y las decisiones tomadas en la sesión.
+Conservá la lista de archivos modificados, los comandos de verificación, la spec en uso y las decisiones tomadas en la sesión.
