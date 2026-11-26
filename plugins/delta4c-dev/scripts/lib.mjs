@@ -98,3 +98,132 @@ export function negar(motivo) {
     },
   });
 }
+
+// ---------- Estado del repo (compartido por compuerta y marcar-revision) ----------
+
+import { createHash } from "node:crypto";
+import { mkdirSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import os from "node:os";
+
+const ARBOL_VACIO = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
+
+export const sha = (texto) => createHash("sha256").update(texto).digest("hex");
+
+export function git(raiz, args) {
+  return execFileSync("git", ["-C", raiz, ...args], {
+    encoding: "utf8",
+    maxBuffer: 256 * 1024 * 1024,
+    stdio: ["ignore", "pipe", "ignore"],
+  });
+}
+
+export function esRepoGit(raiz) {
+  try {
+    git(raiz, ["rev-parse", "--git-dir"]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function cabeza(raiz) {
+  try {
+    return git(raiz, ["rev-parse", "HEAD"]).trim();
+  } catch {
+    return null;
+  }
+}
+
+function exclusiones(config) {
+  const ignorar = Array.isArray(config.ignorarEnCompuerta) ? config.ignorarEnCompuerta : ["**/*.md", "docs/**"];
+  return ignorar.map((g) => `:(exclude,glob)${g}`);
+}
+
+function nuevos(raiz, config) {
+  return git(raiz, ["ls-files", "--others", "--exclude-standard", "--", ".", ...exclusiones(config)])
+    .split("\n")
+    .filter(Boolean);
+}
+
+/** Huella del código: HEAD + cambios sin commitear + archivos nuevos, sin lo ignorado. */
+export function huella(raiz, config) {
+  const excluir = exclusiones(config);
+  const head = cabeza(raiz) || ARBOL_VACIO;
+  let diff = "";
+  try {
+    diff = git(raiz, ["diff", head, "--binary", "--", ".", ...excluir]);
+  } catch {
+    diff = "";
+  }
+  const contenidoNuevos = nuevos(raiz, config)
+    .map((archivo) => {
+      try {
+        return `${archivo}:${sha(readFileSync(path.join(raiz, archivo)))}`;
+      } catch {
+        return archivo;
+      }
+    })
+    .join("\n");
+  return sha(`${head}\n${diff}\n${contenidoNuevos}`);
+}
+
+/** Archivos que cambiaron desde `base` (commit), incluidos los nuevos sin trackear. */
+export function archivosCambiados(raiz, config, base) {
+  let lista = [];
+  try {
+    lista = git(raiz, ["diff", "--name-only", base || ARBOL_VACIO, "--", ".", ...exclusiones(config)]).split("\n");
+  } catch {}
+  return [...new Set([...lista, ...nuevos(raiz, config)].filter(Boolean))];
+}
+
+/** Líneas agregadas + borradas desde `base`, contando los archivos nuevos completos. */
+export function lineasCambiadas(raiz, config, base) {
+  let total = 0;
+  try {
+    for (const linea of git(raiz, ["diff", "--numstat", base || ARBOL_VACIO, "--", ".", ...exclusiones(config)]).split("\n")) {
+      const [mas, menos] = linea.split("\t");
+      if (/^\d+$/.test(mas)) total += Number(mas) + Number(menos);
+    }
+  } catch {}
+  for (const archivo of nuevos(raiz, config)) {
+    try {
+      total += readFileSync(path.join(raiz, archivo), "utf8").split("\n").length;
+    } catch {}
+  }
+  return total;
+}
+
+/** Carpeta de datos persistentes del plugin. */
+export function carpetaDatos(sub) {
+  const carpeta = path.join(process.env.CLAUDE_PLUGIN_DATA || path.join(os.tmpdir(), "delta4c-dev"), sub);
+  mkdirSync(carpeta, { recursive: true });
+  return carpeta;
+}
+
+export function leerJson(archivo, porDefecto = {}) {
+  try {
+    return existsSync(archivo) ? JSON.parse(readFileSync(archivo, "utf8")) : porDefecto;
+  } catch {
+    return porDefecto;
+  }
+}
+
+export function escribirJson(archivo, datos) {
+  writeFileSync(archivo, JSON.stringify(datos, null, 2));
+}
+
+/** Estado de sesión más reciente para una raíz (lo usa marcar-revision, que no recibe session_id). */
+export function estadoMasReciente(raiz) {
+  const carpeta = carpetaDatos("compuerta");
+  let mejor = null;
+  for (const nombre of readdirSync(carpeta)) {
+    const archivo = path.join(carpeta, nombre);
+    const estado = leerJson(archivo, null);
+    if (!estado || estado.raiz !== raiz) continue;
+    const mtime = statSync(archivo).mtimeMs;
+    if (!mejor || mtime > mejor.mtime) mejor = { archivo, estado, mtime };
+  }
+  return mejor;
+}
+
+export const archivoRevision = (raiz) => path.join(carpetaDatos("revisiones"), `${sha(raiz).slice(0, 32)}.json`);

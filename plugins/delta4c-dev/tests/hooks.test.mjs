@@ -165,7 +165,7 @@ test("compuerta: sin cambios no verifica; con cambios bloquea hasta que pasa", (
   writeFileSync(path.join(dir, "roto.txt"), "x");
   const bloqueo = correr("compuerta.mjs", base, ["fin"], env);
   assert.equal(bloqueo.codigo, 2);
-  assert.match(bloqueo.stderr, /Compuerta de verificación/);
+  assert.match(bloqueo.stderr, /Compuerta \(verificación\)/);
 
   writeFileSync(path.join(dir, "docs.md"), "solo docs");
   execFileSync("rm", [path.join(dir, "roto.txt")]);
@@ -208,4 +208,84 @@ test("compuerta: apagada sin configuración o con DELTA4C_SIN_COMPUERTA", () => 
   const conConfig = repo({ verificar: ["exit 1"] });
   writeFileSync(path.join(conConfig, "a.ts"), "x");
   assert.equal(correr("compuerta.mjs", { cwd: conConfig, session_id: "s5" }, ["fin"], { DELTA4C_SIN_COMPUERTA: "1" }).codigo, 0);
+});
+
+// ---------- v0.2: e2e y revisión obligatoria ----------
+
+function sesion(config, id) {
+  const dir = repo(config);
+  const datos = mkdtempSync(path.join(os.tmpdir(), "d4c-datos-"));
+  const env = { CLAUDE_PLUGIN_DATA: datos };
+  const base = { cwd: dir, session_id: id };
+  correr("compuerta.mjs", base, ["inicio"], env);
+  return { dir, env, base };
+}
+
+test("compuerta e2e: corre solo cuando los cambios tocan un disparador", () => {
+  const { dir, env, base } = sesion({ verificar: ["true"], verificarE2E: ["exit 7"], disparadoresE2E: ["src/ui/**"] }, "e1");
+  mkdirSync(path.join(dir, "src", "ui"), { recursive: true });
+  writeFileSync(path.join(dir, "src", "logica.ts"), "x");
+  assert.equal(correr("compuerta.mjs", base, ["fin"], env).codigo, 0, "no toca UI");
+  writeFileSync(path.join(dir, "src", "ui", "Boton.tsx"), "x");
+  const r = correr("compuerta.mjs", base, ["fin"], env);
+  assert.equal(r.codigo, 2);
+  assert.match(r.stderr, /Compuerta \(e2e\)/);
+});
+
+test("compuerta e2e: detecta cambios ya commiteados en la sesión", () => {
+  const { dir, env, base } = sesion({ verificarE2E: ["exit 1"], disparadoresE2E: ["**/*.tsx"] }, "e2");
+  writeFileSync(path.join(dir, "Pantalla.tsx"), "x");
+  execFileSync("git", ["-C", dir, "add", "-A"]);
+  execFileSync("git", ["-C", dir, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "pantalla"]);
+  assert.equal(correr("compuerta.mjs", base, ["fin"], env).codigo, 2);
+});
+
+test("revisión obligatoria: exige revisión en cambios grandes y la acepta una vez registrada", () => {
+  const { dir, env, base } = sesion({ verificar: ["true"], revisionObligatoria: { minLineas: 10 } }, "r1");
+  writeFileSync(path.join(dir, "chico.ts"), "a\nb\n");
+  assert.equal(correr("compuerta.mjs", base, ["fin"], env).codigo, 0, "cambio chico no exige revisión");
+
+  writeFileSync(path.join(dir, "grande.ts"), Array.from({ length: 30 }, (_, i) => `linea ${i}`).join("\n"));
+  const r = correr("compuerta.mjs", base, ["fin"], env);
+  assert.equal(r.codigo, 2);
+  assert.match(r.stderr, /delta4c-dev:revision/);
+  assert.match(r.stderr, /marcar-revision\.mjs/);
+
+  const marca = spawnSync("node", [path.join(scripts, "marcar-revision.mjs")], { cwd: dir, encoding: "utf8", env: { ...process.env, ...env } });
+  assert.equal(marca.status, 0, marca.stderr);
+  assert.match(marca.stdout, /revisión registrada/);
+  assert.equal(correr("compuerta.mjs", base, ["fin"], env).codigo, 0, "revisada");
+
+  writeFileSync(path.join(dir, "grande.ts"), Array.from({ length: 30 }, (_, i) => `linea ${i}`).join("\n") + "\nfix\n");
+  assert.equal(correr("compuerta.mjs", base, ["fin"], env).codigo, 0, "un arreglo chico después de revisar no exige otra revisión");
+
+  writeFileSync(path.join(dir, "otro.ts"), Array.from({ length: 20 }, (_, i) => `nuevo ${i}`).join("\n"));
+  assert.equal(correr("compuerta.mjs", base, ["fin"], env).codigo, 2, "otro cambio grande vuelve a exigirla");
+});
+
+test("revisión obligatoria: funciona sin `verificar` y la verificación fallida tiene prioridad", () => {
+  const solo = sesion({ revisionObligatoria: true }, "r2");
+  writeFileSync(path.join(solo.dir, "a.ts"), Array.from({ length: 50 }, () => "x").join("\n"));
+  assert.match(correr("compuerta.mjs", solo.base, ["fin"], solo.env).stderr, /revisión/);
+
+  const ambas = sesion({ verificar: ["exit 1"], revisionObligatoria: true }, "r3");
+  writeFileSync(path.join(ambas.dir, "a.ts"), Array.from({ length: 50 }, () => "x").join("\n"));
+  assert.match(correr("compuerta.mjs", ambas.base, ["fin"], ambas.env).stderr, /Compuerta \(verificación\)/);
+});
+
+// ---------- status line ----------
+
+test("statusline: muestra modelo, contexto, costo y avisa cerca del límite", () => {
+  const r = spawnSync("node", [path.join(scripts, "statusline.mjs")], {
+    input: JSON.stringify({ model: { display_name: "Sonnet" }, context_window: { used_percentage: 75.4 }, cost: { total_cost_usd: 1.234 }, cwd: os.tmpdir() }),
+    encoding: "utf8",
+    env: { ...process.env, NO_COLOR: "1" },
+  });
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /\[Sonnet\]/);
+  assert.match(r.stdout, /75%/);
+  assert.match(r.stdout, /\/clear o \/compact/);
+  assert.match(r.stdout, /US\$1\.23/);
+  const vacio = spawnSync("node", [path.join(scripts, "statusline.mjs")], { input: "", encoding: "utf8" });
+  assert.equal(vacio.status, 0, "no rompe sin datos");
 });

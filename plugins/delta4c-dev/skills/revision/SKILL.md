@@ -54,3 +54,13 @@ Los revisores sin hallazgos van en una línea cada uno.
 
 - Si la persona pidió revisar, entregá el reporte y no toques código.
 - Si estás en medio de implementar una tarea, corregí los problemas confirmados, volvé a correr la verificación del proyecto y repetí la revisión solo sobre lo que cambió. Las sugerencias se aplican solo si son baratas y no amplían el alcance.
+
+## 7. Registrar
+
+Cuando no quedan problemas críticos ni altos sin resolver (corregidos, o reportados a la persona si no se pueden resolver acá), registrá la revisión para la compuerta:
+
+```
+node "${CLAUDE_PLUGIN_ROOT}/scripts/marcar-revision.mjs"
+```
+
+Si el repo tiene `revisionObligatoria`, sin este registro la compuerta no deja terminar el turno. No lo corras si no hiciste la revisión.
